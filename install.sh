@@ -19,7 +19,7 @@ fi
 echo "Available non-system users:"
 echo "$AVAILABLE_USERS"
 while true; do
-    read -p "Enter the username to configure: " TARGET_USER
+    read -p "Enter the username to configure: " TARGET_USER </dev/tty
     if echo "$AVAILABLE_USERS" | grep -qw "$TARGET_USER"; then
         break
     else
@@ -75,5 +75,5 @@ EOF
 chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.config/autostart/plank.desktop"
 
 # Final message
-echo "System setup complete. Please reboot for all changes to take effect."
+echo "System setup complete. Please log out and log back in for all changes to take effect."
 echo "After logging in as '$TARGET_USER', manually configure the desktop, then run the user settings script separately."
