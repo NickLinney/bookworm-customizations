@@ -2,20 +2,30 @@
 
 # Ensure script is run as root
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
+   echo "This script must be run as root"
    exit 1
 fi
 
-# Prompt user for target username
-echo "Available non-system users:"
-getent passwd | awk -F: '$3 >= 1000 {print $1}'
-read -p "Enter the username to configure: " TARGET_USER
+# Get valid non-system users (UID >= 1000, exclude 'nobody')
+AVAILABLE_USERS=$(getent passwd | awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}')
 
-# Verify the selected user exists
-if ! id "$TARGET_USER" &>/dev/null; then
-    echo "Error: User '$TARGET_USER' does not exist. Exiting."
+# Ensure there is at least one valid user
+if [[ -z "$AVAILABLE_USERS" ]]; then
+    echo "Error: No valid non-system users found. Please create a user before running this script."
     exit 1
 fi
+
+# Prompt user selection in a loop until a valid entry is provided
+echo "Available non-system users:"
+echo "$AVAILABLE_USERS"
+while true; do
+    read -p "Enter the username to configure: " TARGET_USER
+    if echo "$AVAILABLE_USERS" | grep -qw "$TARGET_USER"; then
+        break
+    else
+        echo "Invalid selection. Please choose from the list above."
+    fi
+done
 
 TARGET_HOME="/home/$TARGET_USER"
 
