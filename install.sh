@@ -6,19 +6,29 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Define primary user
-SOURCE_USER="nrlin"
-SOURCE_HOME="/home/$SOURCE_USER"
-TARGET_USERS=$(getent passwd | awk -F: '$3 >= 1000 && $1 != "'$SOURCE_USER'" && $6 !~ /\/nonexistent/ {print $1}')
+# Prompt user for target username
+echo "Available non-system users:"
+getent passwd | awk -F: '$3 >= 1000 {print $1}'
+read -p "Enter the username to configure: " TARGET_USER
+
+# Verify the selected user exists
+if ! id "$TARGET_USER" &>/dev/null; then
+    echo "Error: User '$TARGET_USER' does not exist. Exiting."
+    exit 1
+fi
+
+TARGET_HOME="/home/$TARGET_USER"
 
 # Update system and install essential packages
 apt update && apt upgrade -y
-apt install -y git wget curl dbus-x11 lightdm slick-greeter gedit \
-               plank epiphany-browser codium papirus-icon-theme unzip \
+apt install -y git wget curl dbus-x11 lightdm slick-greeter gedit extrepo unzip \
                dconf-cli gsettings-desktop-schemas
 
 # Install Cinnamon minimal
 apt install -y cinnamon-core
+
+# Install additional themes and applications after Cinnamon-core
+apt install -y papirus-icon-theme plank epiphany-browser codium
 
 # Configure LightDM
 if [[ -f /etc/lightdm/lightdm.conf ]]; then
@@ -27,17 +37,22 @@ fi
 cat <<EOF > /etc/lightdm/lightdm.conf
 [Seat:*]
 greeter-session=slick-greeter
-autologin-user=nrlin
+autologin-user=$TARGET_USER
 EOF
 systemctl enable --now lightdm
 
+# Download and set up wallpaper directory
+WALLPAPER_DIR="$TARGET_HOME/Pictures/Wallpaper"
+mkdir -p "$WALLPAPER_DIR"
+wget -O "$WALLPAPER_DIR/wallpaper_lake.jpg" "https://github.com/NickLinney/bookworm-customizations/blob/main/wallpaper_lake_oregon.jpeg"
+chown -R "$TARGET_USER:$TARGET_USER" "$WALLPAPER_DIR"
+
+# Set wallpaper using gsettings
+sudo -u "$TARGET_USER" dbus-launch gsettings set org.cinnamon.desktop.background picture-uri "file://$WALLPAPER_DIR/wallpaper_lake.jpg"
+
 # Install and configure Plank
-apt install -y plank
-for user in $TARGET_USERS; do
-    USER_HOME="/home/$user"
-    AUTOSTART_DIR="$USER_HOME/.config/autostart"
-    mkdir -p "$AUTOSTART_DIR"
-    cat <<EOF > "$AUTOSTART_DIR/plank.desktop"
+mkdir -p "$TARGET_HOME/.config/autostart"
+cat <<EOF > "$TARGET_HOME/.config/autostart/plank.desktop"
 [Desktop Entry]
 Type=Application
 Exec=plank
@@ -47,8 +62,8 @@ X-GNOME-Autostart-enabled=true
 Name=Plank
 Comment=Dock for managing windows
 EOF
-    chown "$user:$user" "$AUTOSTART_DIR/plank.desktop"
-done
+chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.config/autostart/plank.desktop"
 
 # Final message
 echo "System setup complete. Please reboot for all changes to take effect."
+echo "After logging in as '$TARGET_USER', manually configure the desktop, then run the user settings script separately."
