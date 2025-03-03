@@ -54,11 +54,11 @@ systemctl enable --now lightdm
 # Download and set up wallpaper directory
 WALLPAPER_DIR="$TARGET_HOME/Pictures/Wallpaper"
 mkdir -p "$WALLPAPER_DIR"
-wget -O "$WALLPAPER_DIR/wallpaper_lake.jpg" "https://github.com/NickLinney/bookworm-customizations/blob/main/wallpaper_lake_oregon.jpeg"
+wget -O "$WALLPAPER_DIR/wallpaper_lake.jpeg" "https://github.com/NickLinney/bookworm-customizations/blob/main/wallpaper_lake_oregon.jpeg"
 chown -R "$TARGET_USER:$TARGET_USER" "$WALLPAPER_DIR"
 
 # Set wallpaper using gsettings
-sudo -u "$TARGET_USER" dbus-launch gsettings set org.cinnamon.desktop.background picture-uri "file://$WALLPAPER_DIR/wallpaper_lake.jpg"
+sudo -u "$TARGET_USER" dbus-launch gsettings set org.cinnamon.desktop.background picture-uri "file://$WALLPAPER_DIR/wallpaper_lake.jpeg"
 
 # Install and configure Plank
 mkdir -p "$TARGET_HOME/.config/autostart"
